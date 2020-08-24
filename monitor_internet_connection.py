@@ -68,11 +68,6 @@ import signal
 import argparse
 import sys
 
-# If enabled, the log file will be created in the current working folder.
-log_filename = "internet_monitor.log"
-file = os.path.join(os.getcwd(), log_filename)
-
-
 def parse_args(args=sys.argv[1:]):
     """Parse arguments."""
 
@@ -80,15 +75,18 @@ def parse_args(args=sys.argv[1:]):
         description="Monitor the uptime of the Internet connection and record any downtime",
         prog='python -m monitor_internet_connection')
 
-    parser.add_argument("-n", "--no-logfile", dest='disable_logfile',
-                   help="do not create a logfile",
-                   action="store_true")
 
     parser.add_argument("-f", "--freq", dest="polling_freq", metavar="N",
                    default=1,
                    type=int,
                    choices=[1, 2, 3, 4, 5, 10, 20, 30, 60],
                    help="specify polling frequency in seconds")
+
+    parser.add_argument("-t", "--type", dest='log_type',
+                   help="Log file type",
+                   default="text",
+                   choices=["text", "csv", "none"],
+                   action="store")
 
     return parser.parse_args(args)
 
@@ -149,12 +147,16 @@ def signal_handler(signal_received, frame):
     # Display exit message to console and record in log file.
     exit_time = datetime.datetime.now()
     exit_msg = "Monitoring Internet Connection stopped at : " + exit_time.strftime("%Y-%m-%d %H:%M:%S")
+    exit_csv = "STOPPED," + exit_time.strftime("%Y-%m-%d %H:%M:%S")
     print(exit_msg)
 
-    if enable_logfile:
+    if log_type == "text":
         with open(file, 'a') as writer:
             writer.write(exit_msg + "\n")
-
+    if log_type == "csv":
+        with open(file, 'a') as writer:
+            writer.write(exit_csv + "\n")
+    
     sys.exit()
 
 
@@ -189,11 +191,15 @@ def monitor_inet_connection(enable_logfile = True, polling_freq = 1):
             " polling every " + str(polling_freq) + " second(s)"
     print(msg)
 
-    if enable_logfile:
+    if log_type == "text":
         with open(file, 'a') as writer:
             writer.write("--------------------------------------------------------------\n")
             writer.write("--------------------------------------------------------------\n")
             writer.write(msg + "\n")
+    if log_type == "csv":
+        with open(file, 'a') as writer:
+            writer.write(f"START,{str(now).split('.')[0]},FREQ,{str(polling_freq)}\n")
+            writer.write("EVENT_START_TIME,EVENT_END_TIME,DURATION\n")
 
     while True:
         # When run on cmd line, exit program via Ctrl-C.
@@ -204,9 +210,13 @@ def monitor_inet_connection(enable_logfile = True, polling_freq = 1):
             fail_time = datetime.datetime.now()
             msg = "-------Internet Connection unavailable at : " + str(fail_time).split(".")[0]
             print(msg)
-            if enable_logfile:
+            if log_type == "text":
                 with open(file, 'a') as writer:
                     writer.write(msg + "\n")
+            if log_type == "csv": # Write start time to csv
+                with open(file, 'a') as writer:
+                    writer.write(f"{str(fail_time).split('.')[0]},")
+                    
 
             # Check every 1 second to see if internet connectivity restored.
             counter = 0
@@ -219,15 +229,15 @@ def monitor_inet_connection(enable_logfile = True, polling_freq = 1):
                 if counter >= 60:
                     counter = 0
                     now = datetime.datetime.now()
-                    msg = "-----------Internet Connection still unavailable at : " + str(now).split(".")[0]
+                    msg = "-----------Internet Connection still unavailable at : " + str(now).split('.')[0]
                     print(msg)
-                    if enable_logfile:
+                    if log_type == "text":
                         with open(file, 'a') as writer:
                             writer.write(msg + "\n")
 
             # Record observed time when internet connectivity restored.
             restore_time = datetime.datetime.now()
-            restore_msg = "-------Internet Connection restored at    : " + str(restore_time).split(".")[0]
+            restore_msg = "-------Internet Connection restored at    : " + str(restore_time).split('.')[0]
 
             # Calculate the total duration of the downtime
             downtime_duration = calc_time_diff(fail_time, restore_time)
@@ -236,17 +246,32 @@ def monitor_inet_connection(enable_logfile = True, polling_freq = 1):
             # Display restoration message to console and record in log file.
             print(restore_msg)
             print(duration_msg)
-            if enable_logfile:
+            if log_type == "text":
                 with open(file, 'a') as writer:
                     writer.write(restore_msg + "\n")
                     writer.write(duration_msg + "\n")
+            if log_type == "csv": # Write end time and duration to csv
+                with open(file, 'a') as writer:
+                    writer.write(f"{str(restore_time).split('.')[0]},{downtime_duration}\n")
 
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    enable_logfile = not args.disable_logfile
+    
+    log_type = args.log_type
+    enable_logfile = log_type != "none"
+
+    if log_type == "text":
+        log_filename = "internet_monitor.log"
+    elif log_type == "csv":
+        log_filename = "internet_monitor.csv"
+    
+    # If enabled, the log file will be created in the current working folder.
+    if enable_logfile:
+        file = os.path.join(os.getcwd(), log_filename)
+
     monitor_inet_connection(enable_logfile, args.polling_freq)
 
 
