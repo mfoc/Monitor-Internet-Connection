@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Name:           monitor_internet_connection.py
 Author:         Martin F. O'Connor (C)
@@ -5,7 +6,7 @@ Description:    Monitor Internet connectivity and record time and duration
                 of any downtime.
 
 How to run:		To run this program from the Console/Terminal, type:
-					python monitor_internet_connection.py
+					python3 monitor_internet_connection.py
 
 Date:           23rd June 2019
 Version:        1.0
@@ -36,7 +37,7 @@ Updates:
 
     2.  Greatly simplified the installation instructions.
         To install: pip install monitor_internet_connection
-        To run:     python -m monitor_internet_connection
+        To run:     python3 -m monitor_internet_connection
 
 
 Date:           16th January 2020
@@ -78,7 +79,7 @@ def parse_args(args=sys.argv[1:]):
 
     parser = argparse.ArgumentParser(
         description="Monitor the uptime of the Internet connection and record any downtime",
-        prog='python -m monitor_internet_connection')
+        prog='python3 -m monitor_internet_connection')
 
     parser.add_argument("-n", "--no-logfile", dest='disable_logfile',
                    help="do not create a logfile",
