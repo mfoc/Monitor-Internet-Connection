@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Name:           monitor_internet_connection.py
 Author:         Martin F. O'Connor (C)
@@ -5,7 +6,7 @@ Description:    Monitor Internet connectivity and record time and duration
                 of any downtime.
 
 How to run:		To run this program from the Console/Terminal, type:
-					python monitor_internet_connection.py
+					python3 monitor_internet_connection.py
 
 Date:           23rd June 2019
 Version:        1.0
@@ -36,7 +37,7 @@ Updates:
 
     2.  Greatly simplified the installation instructions.
         To install: pip install monitor_internet_connection
-        To run:     python -m monitor_internet_connection
+        To run:     python3 -m monitor_internet_connection
 
 
 Date:           16th January 2020
@@ -78,7 +79,7 @@ def parse_args(args=sys.argv[1:]):
 
     parser = argparse.ArgumentParser(
         description="Monitor the uptime of the Internet connection and record any downtime",
-        prog='python -m monitor_internet_connection')
+        prog='python3 -m monitor_internet_connection')
 
     parser.add_argument("-n", "--no-logfile", dest='disable_logfile',
                    help="do not create a logfile",
@@ -89,6 +90,15 @@ def parse_args(args=sys.argv[1:]):
                    type=int,
                    choices=[1, 2, 3, 4, 5, 10, 20, 30, 60],
                    help="specify polling frequency in seconds")
+
+    parser.add_argument("-d", "--dest", dest="target_host",
+                   default="8.8.8.8",
+                   help="specify internet host to check")
+
+    parser.add_argument("-p", "--port", dest="target_port",
+                   default=53,
+                   type=int,
+                   help="specify TCP port to check")
 
     return parser.parse_args(args)
 
@@ -173,7 +183,7 @@ def verify_write_access():
 
 
 
-def monitor_inet_connection(enable_logfile = True, polling_freq = 1):
+def monitor_inet_connection(enable_logfile = True, polling_freq = 1, host = "8.8.8.8", port = 53):
     """ Monitor internet connection indefinitely."""
 
     # Capture the Ctrl-C (or SIGINT) signal to permit the program to exit gracefully.
@@ -197,7 +207,7 @@ def monitor_inet_connection(enable_logfile = True, polling_freq = 1):
 
     while True:
         # When run on cmd line, exit program via Ctrl-C.
-        if is_internet_alive():
+        if is_internet_alive(host=host, port=port):
             time.sleep(polling_freq)
         else:
             # Record observed time when internet connectivity fails.
@@ -247,6 +257,6 @@ if __name__ == "__main__":
     args = parse_args()
 
     enable_logfile = not args.disable_logfile
-    monitor_inet_connection(enable_logfile, args.polling_freq)
+    monitor_inet_connection(enable_logfile, args.polling_freq, args.target_host, args.target_port)
 
 
